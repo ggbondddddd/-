@@ -1,0 +1,225 @@
+如果下次再遇到报错说 request 合法域名校验出错我们可以直接在微信小程序的详细的本地设置里面将不校验合法域名打开即可
+
+UniHelper插件可以快速生成一些标签的ts类型,如:const rules: UniHelper.UniFormsRules
+
+<uni-forms></uni-forms>可以用来验证表单数据,ru1address-form.vue里面新增地址格式就是由这个进行判断
+<switch></switch>标签：开关选择器
+
+如<uni-forms :rules="rules" :model="form" ref="formRef"></uni-forms>
+创建组件实例const formRef = ref<UniHelper.UniFormsInstance>() 使用的时候直接用定义的变量名就可以使用这个实例了
+
+  1.从新封装了响应请求,利用promise,里面默认配置了token的请求头
+
+  2.规定类型,许多接口数据设定了类型,有的是多重嵌套的类型,用泛型
+
+  3.猜你喜欢请求做了性能优化,最多只有三十五页,当到了三十五页无法发请求,并且告知用户,
+
+  4.猜你喜欢利用了promise.all 配合async,await优化代码,原本是要等待三个await的请求,是一个一个等待,相当于同步,要等待的时间是三个加起来,而用了promise.all
+  我们就可以让这个三个代码同时进行加载,并且只需要等待promise.all的结果即可,效率更高,并且也实现了阻塞的效果
+
+  5.利用了骨架屏优化用户体验,实现步骤,首先小程序里面有生成骨架屏方式（生成的骨架屏会与屏幕尺寸有关,你屏幕显示的内容才会被生成代码）,
+  然后将生成的文件一个是js,一个是css代码复制到项目里面用一个vue组件粘贴进去,然后再首页用v-if控制,当首页所有请求回来之前展示骨架屏,
+  首页请求数据全部回来之后,隐藏骨架屏展示正常页面,依然要使用promise.all
+
+  6.navigation标签的url传递的参数我有一点不太明白
+
+  7:有一个小技巧,如 page: import.meta.env.DEV ? 30 : 1,这个数据作为接口参数,当我们处于开发环境下页码就是30,也就是我们利用微信小程序
+  自己测试的时候,这是为了方便我们测试最大页的业务逻辑是否实现,然后当我们打包的时候,这里默认page自动就是1,而不是30了
+
+  8.有一点需要注意,在vue3中不是任何数据都需要响应式,不需要做页面渲染的数据就不需要响应式,可以直接复制
+
+  9.const encryptedData= event.detail!.encryptedData!非空断言,你只断言前面的detail并不会影响后面的参数,后面参数可能还是undefined,
+  所以后面这个参数也需要加上非空断言,主要是因为后面使用这个参数的时候报错了,显示这个参数可能是undefined
+
+  10.将可以复用的比如猜你喜欢组件是全局组件,并将获取猜你喜欢组件实例,滚动触底事件,加载分页数据封装成组合式函数
+
+  11.获取猜你喜欢封装的组合式函数的时候注意,可以利用解构直接获取到const { guessRef, onScrolltolower } = useGuessList(),
+  也可用一个参数接收 如const a=useGuessList( ) 然后调用const guessRef=a.guessRef;const onScrolltolower=a.onScrolltolower即可
+
+  12.从tabbar我的点击设置,这个设置是分包生成的,当你创建文件选择用分包创建uniapp,会在pages.josn里面subPackages显示你创建分包的文件,
+  还可以通过preloadRule来配置预下载功能,什么意思,就是当我进入到tabbar的我的页面时,就可以预下载设置里面的页面,这样相当于时性能优化,
+  具体如何配置看官方文档,还要我项目的pages.json,这可以作为一个重要点记录,分包的体积越大,优化性能越明显,主包优化懒加载,分包优化预下载
+
+  13.用户处于登录状态,也就是可以拿到pinia仓库的profile属性,说明用户存在,设置里面显示我的收货地址,退出登录,而处于未登录状态,这两个选项
+  是隐藏起来的
+
+  14.接口和type可以配合使用,如果是类型A要用到某个接口B或者type c ,type A = c &{ }或type A=B &
+  如果是接口a要用到接口b或类型c就是 interface a extends b { }或 interface a extends c { }即可,
+
+  15.v-model或者v-bind的数据会报错的问题
+  const profile = ref<ProfileDetail>({} as ProfileDetail)
+    console.log(profile.value?.nickname)
+
+    const getMemeberProfileData = async () => {
+    const res = await getMemeberProfileAPI()
+    profile.value = res.result
+    console.log(profile.value?.nickname)
+    }
+
+    <input class="input" type="text" placeholder="请填写昵称" v-model="profile?.nickname" />
+
+    我的理解,此处的profile数据是由异步请求得来的,上面两个打印,
+    情况1:当profile存在初始值
+    1.1 v-mode的profile后面跟!,第一个打印是undefined,而不会报错第二个打印profie打印出
+    异步请求回来后赋给他的值;当你v-model的profile后面跟?,表示这个属性可以存在或不存在,保存的时候vscode会报错
+    ,这里就说明v-model的属性可以为空对象{},但是必须存在,不存在就报错;
+    1.2 如果将v-model换成v-bind,无论profile后面跟的是!还是?,都不会报错,第一个profile打印出来undefined,
+    这个地方就和上面用v-model不一样了
+    情况2:当profile没有赋初始值,
+    2.1 v-bind的profile后面跟的是!,vscode可以正常编译,当点击跳转到个人信息微信小程序就会报错说
+    profile的nickname属性不存在,而v-bind后面跟?,不会报错会打印出来undefined;
+    2.2 v-model的profile后面跟的是!,vscode能正常编译,点击到个人信息,小程序会报错 profile的nickname属性不存在
+    v-model后面的profile跟的是?,vscode会直接报错.
+    貌似是v-model需要和某个属性双向绑定必须读取到这个值,不然就无法双向绑定,而v-bind就不需要,读取不到这个值那么就会
+    报错了,js的语法中当前面的值为undefined,就不会读取到后面的值了
+
+    16.address-form.vue里面的保存按钮需要做节流防抖的优化,不然你快速点击会发好几个请求,浪费性能了
+
+    17.address-form.vue还利用uni-form完成了对表单的校验,都符合规则才能提交
+
+    18。如果能把sku原理理解透彻,那还是很厉害的,这里我们是直接引用的插件,这个插件使用流程,首先打开Dcloud插件市场网址:ext.dcloud.net.cn
+    搜索sku,下载下载量最高的那个zip包,解压然一直点进,复制vk-data-goods-sku-popup和vk-data-input-number-box这两个包到项目components目录下
+    ,没有这个components就新建一个,然后可以把插件的示例代码放到你page.json里面配置过路径的文件就可以打开了,components里面两个文件我们没有手动
+    引入,而是依靠pages.json里面的easycom配置的开启了autoscan自动扫描功能自动匹配components文件夹里是否有符合uniapp要求的组件,如果有会自动帮你导入,
+    如果最后我上传文件的时候报错,可能问题就出在这两个文件,老师在那两两个文件写上/* eslint-disable */就可以而我就会报错,我还是不写了,这个
+    sku在goods.vue里面使用,说是在还是挺复杂得,需要你专门设计数据的类型,然后获取的数据也是相当多的
+
+    19.可以给很多地方做节流防抖,比如修改购物车商品数量,如果你点了很多次最好不要一次发那么多请求
+
+    20.小程序tabBar页特点,跳转到tabBar页面会关闭其他非tabBar页面,所有tabBar没有后退按钮,而我们想要在商品详细页面点击到购物车页面的时候
+    有回退按钮,很简单,将购物车页面引入普通页面,然后设置后退按钮即可,我们直接把cart购物车全部代码封装为组件,然后tabar用到的购物车路由引入
+    并且使用这个组件即可,然后另外一个普通页也可用到购物车组件了,只有在pages.json这个配置路由组件的tabBar属性里面配置了
+    的路径才是tabBar的页面。
+
+    21.// 获取屏幕边界到安全区域距离,意思就是给你的屏幕最上方加一个padding,让你的内容不至于被如苹果顶部的黑边挡住
+    const { safeAreaInsets } = uni.getSystemInfoSync()
+    <view class="navbar" :style="{ paddingTop: safeAreaInsets?.top + 'px' }"></view>
+    安全距离我需要掌握,普通购物车的底部,如果商品太多,会出现一点问题,我不知到为什么用这个方法解决不了
+
+    22.购物车结算的create.vue里面可以修改地址,修改地址用uni做不了,因为无法实现这里的组件通信,我们可以用pinia仓库来实现组件
+    间通信,点击进入地址页面, 点击某一个地址的时候收集到这个收货地址的参数,然后返回上一页,在上一页渲染收集回来的参数,
+    然后在create.Vue里面渲染默认地址的时候用逻辑中断,优先展示仓库里面拿到的那个地址,如果没有那个地址就展示默认地址,
+    这里注意,地址里面的修改是一个navigation标签,跳转到修改具体地址上去,你给这个标签的父标签添加了点击事件会出现事件冒泡,
+    无法跳转到修改地址页面,我们给这个导航标签添加一个@tap.stop="() => {}"即可
+
+    23.结算页面,也是就create.vue页面需要进行判断,如果跳转的地址没有携带query参数,就说明是从购物车点击支付跳转过来的,就显示购物车
+    里面的数据,如果携带有参数就说明是从某一件商品页面也就是goods.vue跳转过来的,就不要展示购物车里面的,而是展示另一种情况的数据,
+    在create.vue的下一个页面点击返回上一页不会返回到create.vue,而是上上页cart.vue,因为create.vue使用的跳转是uni.redirectTo,
+    这种跳转方式回关闭你跳转的那一页。
+
+    24.goods.vue里面的点击送至可以获取到真实的收货地址,以及新建地址,别忘了自己写一下,都是原本做过的业务
+
+    25.页面栈getCurrentPages()返回的是一个数组,数组里面有你点击过的路由地址,如果你是直接wx小程序默认编译a页面进入到a页面此时输出数组里面就
+    只有a路由相关的一个元素,而如果你从a点击跳转到b再跳转到c,打印页面站,就会显示出与a,b,c路由相关三个元素,而等待支付的detail的导航栏
+    跳转是跳转回当前页还是首页就是通过这个页面栈判断,如果没有上一页,只有当前页点击导航跳转回首页,有上一页就跳转回上一页,这是两个不同的导航标签,
+    并且页面栈还包含你每一个路由的实例ref,如我们可以此处利用了里面的动画animate动画
+
+    26.后端返回回来的数字,我们代表不同的状态,我们可以利用枚举让数字更加语义化,如后端的state=1代表待付款,我们可以某个枚举的一个元素写为
+    enum OrderState {daifukuan=1} 还要其他的2,,3,4等以此类推
+
+    27. const order = ref<OrderResult>({} as OrderResult)
+      <view class="status"> {{ orderStateList[order.orderState]?.text }}</view>
+      这里快把我搞死了,首先作为索引值必须存在,而必须存在就必须给order赋一个初始值,然后text一直报错说undefined,加个?即可
+
+      28.有一个小小疑惑,什么时候用分包,什么时候正常的,还有就是安全区和骨架屏这种基础的东西都要知道,项目要点可以写这些东西
+
+      29.支付页没有用真正的支付,而是利用的模拟支付,因为这里只有黑马的官方可以支付,我们只能用模拟支付的接口
+      // 开发环境就调用模拟支付 ,必须要说明如果在开发环境
+      if (import.meta.env.DEV) {
+      await getPayMockAPI({ orderId: query.id })
+      }
+      import.meta.env.DEV当我们打包的时候自动不会编译这里面的代码,这里的代码只有我们在开发环境下的时候才会编译,打包的时候会自动忽略掉
+
+      30.我理解的当我点击了去支付调用了模拟支付请求跳转到payment.vue页面,此时order.orderState应该是后端那边修改了,由1变为了2,而不需要
+      我们手动更改
+
+      31.加入给a对象指定类型的时候,加入a对象里面有很多个元素,我们可以只给其中几个我们需要用到的元素指定类型,这样当我们用到
+      这几个元素的时候就会有代码提示,而我们不需要用到的我们我们页不要用,用的话就会说你未指定类型.
+
+      32.确认弹窗
+      uni.showModal({
+      content:'为保障您的权益,请受到或并确认无误后,再确认收货',
+      success(res){
+      if(res.confirm){
+      putMemberOrderReceiptByIdAPI(query.id)
+      }
+      }
+      })
+
+      33.获取物流地址接口貌似出问题了,报错说服务器出问题了
+
+      34.学会了一个tabs栏切换的新思路,如果点击不同的tabs栏,在tabs栏下面设置一个额外的标签,这个标签随着你点击tabs栏的时候发生滑动
+      ,我们可以让这个标签滑动加上过渡效果,移动这个标签的位置来做,效果看起来很好,tabs栏是遍历出来的,所以有index,每点击相当于
+      让activeIndex=index ,很好理解
+      <view class="cursor" :style="{ left: activeIndex * 20 + '%' }"></view>
+
+      35.父组件
+      <OrderList :order-state="item.orderState" />
+      子组件 const props = defineProps<{ orderState: number }>() 接收
+
+        36.list.vue订单详情页和封装的OrderList.vue组件我觉得很精妙,这个页面的逻辑写的很好,可以去看看这个封装组件的接口也很精妙
+        通过不同orderstate判断来请求回来不同的数据展示在不同的tabs栏,然后每个tabs栏里面又通过orderstate判断展示不同的按钮,如
+        待付款展示去支付按钮,而待发货就不会展示支付按钮,因为已经支付,而是展示再次购买,等。
+
+        37.还有两个需要补充的业务,触底显示下一页数据,下拉刷新页面 <scroll-view></scroll-view>明天来做完这个业务,这个地方就和上面用v-model不一样了
+        标签记住不是放在swiper外面,因为你页面实际展示的就是Orderlist组件
+
+        38.轮播图是<swiper><swiper-item></swiper-item></swiper>
+
+        39.打包成微信小程序是 pnpm build:mp-weixin 开发者运行是pnpm dev:mp-weixin,都是在package.json里面配置的
+
+        40.打包上线,首先appid需要是对的,在manifest.json里面可以配置和微信小程序对应的appid,然后将项目在vs里面打包,打包完成后在微信小程序点击上传上传即可
+
+        开发uniapp有三个平台可以展示1.微信小程序,2.手机app,3.电脑的h5端
+        41.实现多平台兼容,这是个重点需要会,首先外面可以点击vscode最左边的那个放大镜图表,搜索wx.开头的,将这些用<!-- #ifdef MP-WEIXIN --><!-- #endif -->
+        标签包裹,然后再去搜索open-type,因为button这个微信小程序独有的属性里面一定有这个属性,然后也是用<!-- #ifdef MP-WEIXIN --><!-- #endif -->包裹,注意
+        navigator标签的open-taype不用处理,因为这个标签兼容网页端和小程序端,所以不需要处理,这个标签的作用就是hi有在微信小程序端的时候被包裹的内容才显示就相当
+        于是做判断<!-- #ifdef H5 --><!-- #endif -->这是网页端,就比如一些如登录,微信小程序可以直接点击输入手机号登录,而在网页端必须输入账号密码,这样外面就可以
+        分别用网页端标签和微信小程序端标签分别包裹一个登录业务,这样在不同端就会显示出对应的登录方式
+
+        42.在写微信小程序的时候我们路径都是直接以/开头,这是根目录的意思,而网页端我们常常以相对路由./开头,打包的时候就要将所有/开头改成./开头,如何实现,
+        在mainifest.json里面配置即可,然后不能直接alt+B打开,而是应该右键点击Open With Live Server打开,这下就可以成功打开
+        /*网页端特有配置 */
+        "h5": {
+        "router": {
+        // 这里会将你引入文件src小程序端开头都是/修改为./开头,也就是相对路径开头
+        "base": "./"
+        }
+        },
+
+        43.有小bug,首先轮播图在网页端打开成手机模式会特别大,还有在我打包下载成安卓应用下载到手机的时候轮播图也特别大,并且在我手机上和在浏览器显示手机时
+        分类页的展示有一行三个变为了一行两个,然后购物车也显示不出来,在微信小程序是可以显示的,还有很多地方有bug,在手机应用端
+
+        44.跨境兼容-样式兼容,通配符选择器在小程序端是不支持的,所有我们不要用这个选择器,小程序端会报错
+        利用 css变量 bottom: var(--window-bottom); 如果不设置这个而是bottom:0,在小程序端没有影响,但是在浏览器端购物车页的结算按钮就会被覆盖在tabBar上,
+        这里也是做了兼容,这个设置意思就是始终在tabar栏上方,css变量需要用var声明,还有别的设置,在uniapp里面看
+
+        46.h5也就是浏览器页面默认时单页面,而小程序端默认是多页面应用,不会出现这样的问题,手机app端经过测试页存在这个问题
+        在h5页面默认会开启scoped,所以微信小程序生成的首页骨架屏展示的时候会出现问题,骨架屏创建时引入对应骨架屏样式的时候虽然看似在骨架屏的style里面有样式显示
+        但是这些样式其实在h5端被默认隔离了,所以其实h5端骨架屏没有样式,解决办法,将骨架屏样式引入进骨架屏即可,经过测试,安卓手机端也会默认开启
+        scoped隔离,所以h5和安卓都应该解决这个兼容性问题,就是骨架屏被引入父组件使用,但是父组件并不会把骨架屏的样式引入,因为默认的scoped, 加入
+        我们骨架屏利用了样式a,我们可以吧样式a从原组件抽离,封装成一个组件引入会原组件,然后再引入骨架屏这些样式,可以解决这个问题,除了首页,分类页的骨架屏也是
+        同样的解决办法,然后利用<!-- #ifdef H5 || APP-PLUS --><!-- #endif -->包裹,因为只要h5端会存在这个问题,小程序和移动端没有这个问题,
+        其实swiper的骨架屏没有处理好,直接就隐藏了
+
+        48.有时候vscode样式提示没有可以shift+ctrl+p搜索Volar 点击Volar:Restart Vue Server即可刷新
+        scss里面引入样式貌似是<style lang="scss">
+          @import '../../../components/style/XtxSwiper.scss'
+        </style>
+
+        49.全局组件swiper在app端和在h5端会出现高度占满整个屏幕的情况,这是因为swiper-item默认是父盒子高度宽度100%,所以我用一个view标签包裹这个swiper,然后给
+        这个view标签高度设置为30%也就是继承父盒子30%,那么swiper-item也会继承这个30%的100%，就不会出现刚刚那种情况，但是我不确定小程序端会不会出问题
+
+        50.对上传图片文件的uni.chooseMedia做兼容处理,因为这个兼容小程序上传,而在h5端或app端都显示这个不是函数,并且报错,我们就需要用到这个api之前的api
+        uni.chooseImage(OBJECT),用条件判断,在h5和app端我们就用这个,在微信小程序我们就用上面那个.用前者是因为前者是后者的更新版本,返回值有一点不同,看文档
+
+        51.在address-form.vue里面在H5端我们不能用小程序可以使用的<picker></picker>标签做所选地址,存在兼容性问题,h5端解决这个问题的办法,我们可以用<uni-data-picker>
+          标签配合上uniCloud云数据库的地址数据(数据库需要自己创建,这些数据创建的数据库有提供),来完成这个业务,一定要注意标签的属性collection绑定的是云端数据库,
+          名字需要和你云端创建的数据库名保持一致,并且这个标签必须项目在HbuildX下面运行出来,在vs里面运行会报错.
+          /* #ifdef H5 || APP-PLUS */
+          // 修改这个<uni-data-picker>内部的样式问题,必须利用深度选择器,因为h5端默认scoped
+            :deep(.selected-area) {
+            height: auto;
+            flex: 0 1 auto;
+            }
+            /* #endif */
